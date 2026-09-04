@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 const DEFAULT_SPEED = 140 // px/sec
 const ARRIVAL_THRESHOLD = 4
 const SQUISH_DURATION = 220 // ms
+const WALK_CYCLE_RATE = 0.045 // radians per (px/sec of speed) per second
 
 function randomTarget(bounds, margins) {
   const width = Math.max(bounds.width - margins.left - margins.right, 1)
@@ -32,6 +33,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
     y: bounds.height / 2,
     facing: 'right',
     squish: { axis: null, intensity: 0 },
+    walkPhase: 0,
   }))
 
   useEffect(() => {
@@ -49,6 +51,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
         facing: 'right',
         squishAxis: null,
         squishStart: -Infinity,
+        walkPhase: 0,
       }
     }
 
@@ -78,6 +81,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
         if (Math.abs(dx) > 1) {
           data.facing = dx < 0 ? 'left' : 'right'
         }
+        data.walkPhase += dt * speed * WALK_CYCLE_RATE
       }
 
       const clampedX = clampAxis(
@@ -104,7 +108,13 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
           ? { axis: data.squishAxis, intensity: 1 - squishElapsed / SQUISH_DURATION }
           : { axis: null, intensity: 0 }
 
-      setPose({ x: data.position.x, y: data.position.y, facing: data.facing, squish })
+      setPose({
+        x: data.position.x,
+        y: data.position.y,
+        facing: data.facing,
+        squish,
+        walkPhase: data.walkPhase,
+      })
       frameId = requestAnimationFrame(tick)
     }
 

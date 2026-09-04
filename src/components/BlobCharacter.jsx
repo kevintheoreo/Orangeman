@@ -2,6 +2,10 @@ import { generateBlobPath } from '../utils/blobPath'
 import './BlobCharacter.css'
 
 const SQUISH_STRENGTH = 0.18
+const WADDLE_BOB = 0.035 // fraction of size the body bounces vertically
+const BODY_SQUASH = 0.05 // fraction the torso squashes/stretches per bounce
+const LEG_SWING_DEG = 20
+const ARM_SWING_DEG = 14
 
 // Renders an orange blob, humanoid smiski-style: a rounded head
 // overlapping a taller rounded torso (one seamless silhouette), with
@@ -12,19 +16,29 @@ function BlobCharacter({
   size = 100,
   facing = 'right',
   squish = { axis: null, intensity: 0 },
+  walkPhase = 0,
 }) {
   const baseRadius = size / 2
   const headRadius = baseRadius * 0.56
   const headOffsetY = -size * 0.46
   const torsoOffsetY = size * 0.18
 
+  // Waddle cycle: two bounces per stride (one per footfall), squashing the
+  // torso in sync with the bob and swinging opposite arm/leg pairs.
+  const bounce = Math.sin(walkPhase * 2)
+  const bobY = -bounce * size * WADDLE_BOB
+  const legSwingLeft = Math.sin(walkPhase) * LEG_SWING_DEG
+  const legSwingRight = -legSwingLeft
+  const armSwingLeft = -legSwingLeft * (ARM_SWING_DEG / LEG_SWING_DEG)
+  const armSwingRight = -armSwingLeft
+
   const torsoPath = generateBlobPath({
     radius: baseRadius,
     points: 10,
     irregularity: 0.12,
     seed: 2.1,
-    squashX: 0.62,
-    squashY: 1.18,
+    squashX: 0.62 * (1 + bounce * BODY_SQUASH),
+    squashY: 1.18 * (1 - bounce * BODY_SQUASH),
   })
   const headPath = generateBlobPath({
     radius: headRadius,
@@ -55,8 +69,24 @@ function BlobCharacter({
       }}
       viewBox={`${-half} ${-half} ${viewBoxSize} ${viewBoxSize}`}
     >
-      <rect className="blob-limb" x={-size * 0.13} y={size * 0.52} width={size * 0.12} height={size * 0.52} rx={size * 0.06} />
-      <rect className="blob-limb" x={size * 0.01} y={size * 0.52} width={size * 0.12} height={size * 0.52} rx={size * 0.06} />
+      <rect
+        className="blob-limb"
+        x={-size * 0.13}
+        y={size * 0.52}
+        width={size * 0.12}
+        height={size * 0.52}
+        rx={size * 0.06}
+        transform={`rotate(${legSwingLeft} ${-size * 0.07} ${size * 0.52})`}
+      />
+      <rect
+        className="blob-limb"
+        x={size * 0.01}
+        y={size * 0.52}
+        width={size * 0.12}
+        height={size * 0.52}
+        rx={size * 0.06}
+        transform={`rotate(${legSwingRight} ${size * 0.07} ${size * 0.52})`}
+      />
       <rect
         className="blob-limb"
         x={-size * 0.38}
@@ -64,7 +94,7 @@ function BlobCharacter({
         width={size * 0.16}
         height={size * 0.48}
         rx={size * 0.08}
-        transform={`rotate(18 ${-size * 0.3} ${size * 0.18})`}
+        transform={`rotate(${18 + armSwingLeft} ${-size * 0.3} ${size * 0.18})`}
       />
       <rect
         className="blob-limb"
@@ -73,21 +103,24 @@ function BlobCharacter({
         width={size * 0.16}
         height={size * 0.48}
         rx={size * 0.08}
-        transform={`rotate(-18 ${size * 0.3} ${size * 0.18})`}
+        transform={`rotate(${-18 + armSwingRight} ${size * 0.3} ${size * 0.18})`}
       />
 
-      <path className="blob-body" d={torsoPath} transform={`translate(0 ${torsoOffsetY})`} />
-      <path className="blob-body" d={headPath} transform={`translate(0 ${headOffsetY})`} />
+      <g transform={`translate(0 ${bobY})`}>
+        <path className="blob-body" d={torsoPath} transform={`translate(0 ${torsoOffsetY})`} />
+        <path className="blob-body" d={headPath} transform={`translate(0 ${headOffsetY})`} />
 
-      <circle className="blob-eye" cx={-headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
-      <circle className="blob-eye" cx={headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
-      <line
-        className="blob-mouth"
-        x1={-headRadius * 0.22}
-        y1={headOffsetY + size * 0.14}
-        x2={headRadius * 0.22}
-        y2={headOffsetY + size * 0.14}
-      />
+        <circle className="blob-eye" cx={-headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
+        <circle className="blob-eye" cx={headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
+        <line
+          className="blob-mouth"
+          x1={-headRadius * 0.22}
+          y1={headOffsetY + size * 0.14}
+          x2={headRadius * 0.22}
+          y2={headOffsetY + size * 0.14}
+        />
+      </g>
+
     </svg>
   )
 }
