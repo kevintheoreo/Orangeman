@@ -1,0 +1,24 @@
+.blob-character {
+  position: absolute;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.blob-body {
+  fill: #ff8c1a;
+}
+
+.blob-limb {
+  fill: #ff8c1a;
+}
+
+.blob-eye {
+  fill: #1a1a1a;
+}
+
+.blob-mouth {
+  stroke: #1a1a1a;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
