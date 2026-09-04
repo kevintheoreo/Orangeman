@@ -1,10 +1,18 @@
 import { generateBlobPath } from '../utils/blobPath'
 import './BlobCharacter.css'
 
+const SQUISH_STRENGTH = 0.18
+
 // Renders an orange blob, humanoid smiski-style: a rounded head
 // overlapping a taller rounded torso (one seamless silhouette), with
 // stubby limb capsules and a minimal dot-eyed face.
-function BlobCharacter({ x = 0, y = 0, size = 100, facing = 'right' }) {
+function BlobCharacter({
+  x = 0,
+  y = 0,
+  size = 100,
+  facing = 'right',
+  squish = { axis: null, intensity: 0 },
+}) {
   const baseRadius = size / 2
   const headRadius = baseRadius * 0.56
   const headOffsetY = -size * 0.46
@@ -30,6 +38,11 @@ function BlobCharacter({ x = 0, y = 0, size = 100, facing = 'right' }) {
 
   const mirror = facing === 'left' ? -1 : 1
 
+  // Squash along the wall-contact axis and stretch along the other, easing back to normal.
+  const squishAmount = squish.intensity * SQUISH_STRENGTH
+  const scaleX = squish.axis === 'horizontal' ? 1 - squishAmount : 1 + squishAmount * 0.5
+  const scaleY = squish.axis === 'vertical' ? 1 - squishAmount : 1 + squishAmount * 0.5
+
   return (
     <svg
       className="blob-character"
@@ -38,7 +51,7 @@ function BlobCharacter({ x = 0, y = 0, size = 100, facing = 'right' }) {
         top: y,
         width: viewBoxSize,
         height: viewBoxSize,
-        transform: `translate(-50%, -50%) scaleX(${mirror})`,
+        transform: `translate(-50%, -50%) scaleX(${mirror * scaleX}) scaleY(${scaleY})`,
       }}
       viewBox={`${-half} ${-half} ${viewBoxSize} ${viewBoxSize}`}
     >
