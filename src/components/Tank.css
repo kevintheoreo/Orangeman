@@ -1,0 +1,7 @@
+.tank {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, #2b6f8f 0%, #103a52 60%, #081f2e 100%);
+}

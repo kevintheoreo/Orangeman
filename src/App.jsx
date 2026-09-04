@@ -1,7 +1,8 @@
+import Tank from './components/Tank'
 import './App.css'
 
 function App() {
-  return <div id="app" />
+  return <Tank />
 }
 
 export default App
