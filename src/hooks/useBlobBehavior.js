@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 
-const DEFAULT_SPEED = 140 // px/sec
+const SPEED_MIN = 90 // px/sec
+const SPEED_MAX = 170 // px/sec
 const ARRIVAL_THRESHOLD = 4
 const SQUISH_DURATION = 220 // ms
 const WALK_CYCLE_RATE = 0.045 // radians per (px/sec of speed) per second
 
 const ACTION_INTERVAL_MIN = 2000 // ms
 const ACTION_INTERVAL_MAX = 6000 // ms
-const ACTION_DURATION_MIN = 400 // ms
-const ACTION_DURATION_MAX = 1000 // ms
 const REDIRECT_CHANCE = 0.6 // chance the timer just picks a new walk target instead of an idle action
-const IDLE_ACTIONS = ['jumping', 'spinning', 'waving', 'squashing', 'colorFlash']
+const ACTION_DURATIONS = {
+  jumping: [450, 700],
+  spinning: [500, 850],
+  waving: [700, 1100],
+  squashing: [350, 600],
+  colorFlash: [300, 550],
+}
+const IDLE_ACTIONS = Object.keys(ACTION_DURATIONS)
 
 function randomBetween(min, max) {
   return min + Math.random() * (max - min)
@@ -25,6 +31,19 @@ function randomTarget(bounds, margins) {
   }
 }
 
+// Picks a new destination and a fresh walk speed together, so each leg of
+// the walk feels distinct rather than a single unchanging pace.
+function pickNewTarget(data, bounds, margins) {
+  data.target = randomTarget(bounds, margins)
+  data.speed = randomBetween(SPEED_MIN, SPEED_MAX)
+}
+
+// Picks a random idle action, avoiding an immediate repeat of the last one.
+function pickIdleAction(lastAction) {
+  const choices = IDLE_ACTIONS.filter((name) => name !== lastAction)
+  return choices[Math.floor(Math.random() * choices.length)]
+}
+
 function clampAxis(value, min, max) {
   if (value < min) return { value: min, hit: true }
   if (value > max) return { value: max, hit: true }
@@ -35,7 +54,7 @@ function clampAxis(value, min, max) {
 // position toward a random target, picking a new target on arrival, and
 // clamps/reflects at the tank walls (with a brief squish) so it can never
 // render outside the visible bounds, even mid-resize.
-function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
+function useBlobBehavior(bounds, { margins } = {}) {
   const boundsRef = useRef(bounds)
   const marginsRef = useRef(margins)
   const dataRef = useRef(null)
@@ -60,6 +79,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
       dataRef.current = {
         position: { x: bounds.width / 2, y: bounds.height / 2 },
         target: randomTarget(bounds, margins),
+        speed: randomBetween(SPEED_MIN, SPEED_MAX),
         facing: 'right',
         squishAxis: null,
         squishStart: -Infinity,
@@ -90,12 +110,13 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
         }
       } else if (now >= data.nextActionTime) {
         if (Math.random() < REDIRECT_CHANCE) {
-          data.target = randomTarget(currentBounds, currentMargins)
+          pickNewTarget(data, currentBounds, currentMargins)
           data.nextActionTime = now + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX)
         } else {
-          data.actionName = IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]
+          data.actionName = pickIdleAction(data.actionName)
           data.actionStart = now
-          data.actionDuration = randomBetween(ACTION_DURATION_MIN, ACTION_DURATION_MAX)
+          const [min, max] = ACTION_DURATIONS[data.actionName]
+          data.actionDuration = randomBetween(min, max)
         }
       }
 
@@ -107,9 +128,9 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
       if (isIdle) {
         // Frozen in place while performing an idle action.
       } else if (distance < ARRIVAL_THRESHOLD) {
-        data.target = randomTarget(currentBounds, currentMargins)
+        pickNewTarget(data, currentBounds, currentMargins)
       } else {
-        const step = Math.min(speed * dt, distance)
+        const step = Math.min(data.speed * dt, distance)
         data.position = {
           x: data.position.x + (dx / distance) * step,
           y: data.position.y + (dy / distance) * step,
@@ -117,7 +138,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
         if (Math.abs(dx) > 1) {
           data.facing = dx < 0 ? 'left' : 'right'
         }
-        data.walkPhase += dt * speed * WALK_CYCLE_RATE
+        data.walkPhase += dt * data.speed * WALK_CYCLE_RATE
       }
 
       const clampedX = clampAxis(
@@ -133,7 +154,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
       data.position = { x: clampedX.value, y: clampedY.value }
 
       if (clampedX.hit || clampedY.hit) {
-        data.target = randomTarget(currentBounds, currentMargins)
+        pickNewTarget(data, currentBounds, currentMargins)
         data.squishAxis = clampedX.hit ? 'horizontal' : 'vertical'
         data.squishStart = now
       }
@@ -162,7 +183,8 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
 
     frameId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frameId)
-  }, [bounds.width, bounds.height, speed, margins])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed off primitive width/height, not the bounds object reference
+  }, [bounds.width, bounds.height, margins])
 
   return pose
 }

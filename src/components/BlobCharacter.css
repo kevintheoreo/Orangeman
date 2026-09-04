@@ -17,7 +17,12 @@
 }
 
 .blob-mouth {
+  fill: none;
   stroke: #1a1a1a;
   stroke-width: 3;
   stroke-linecap: round;
+}
+
+.blob-mouth-open {
+  fill: #1a1a1a;
 }

@@ -93,6 +93,11 @@ function BlobCharacter({
     waveArmAngle = WAVE_RAISE_DEG + Math.sin(action.progress * Math.PI * 6) * WAVE_WIGGLE_DEG
   }
 
+  const isSurprised = action.name === 'jumping' || action.name === 'squashing'
+  const isHappy = action.name === 'waving'
+  const eyeRadius = size * 0.05 * (isSurprised ? 1.3 : 1)
+  const mouthY = headOffsetY + size * 0.14
+
   return (
     <svg
       className="blob-character"
@@ -147,15 +152,20 @@ function BlobCharacter({
         <path className="blob-body" d={torsoPath} transform={`translate(0 ${torsoOffsetY})`} />
         <path className="blob-body" d={headPath} transform={`translate(0 ${headOffsetY})`} />
 
-        <circle className="blob-eye" cx={-headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
-        <circle className="blob-eye" cx={headRadius * 0.36} cy={headOffsetY} r={size * 0.05} />
-        <line
-          className="blob-mouth"
-          x1={-headRadius * 0.22}
-          y1={headOffsetY + size * 0.14}
-          x2={headRadius * 0.22}
-          y2={headOffsetY + size * 0.14}
-        />
+        <circle className="blob-eye" cx={-headRadius * 0.36} cy={headOffsetY} r={eyeRadius} />
+        <circle className="blob-eye" cx={headRadius * 0.36} cy={headOffsetY} r={eyeRadius} />
+        {isSurprised ? (
+          <circle className="blob-mouth-open" cx={0} cy={mouthY} r={size * 0.035} />
+        ) : (
+          <path
+            className="blob-mouth"
+            d={
+              isHappy
+                ? `M ${-headRadius * 0.24} ${mouthY} Q 0 ${mouthY + size * 0.08} ${headRadius * 0.24} ${mouthY}`
+                : `M ${-headRadius * 0.22} ${mouthY} L ${headRadius * 0.22} ${mouthY}`
+            }
+          />
+        )}
       </g>
 
     </svg>
