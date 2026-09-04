@@ -5,6 +5,17 @@ const ARRIVAL_THRESHOLD = 4
 const SQUISH_DURATION = 220 // ms
 const WALK_CYCLE_RATE = 0.045 // radians per (px/sec of speed) per second
 
+const ACTION_INTERVAL_MIN = 2000 // ms
+const ACTION_INTERVAL_MAX = 6000 // ms
+const ACTION_DURATION_MIN = 400 // ms
+const ACTION_DURATION_MAX = 1000 // ms
+const REDIRECT_CHANCE = 0.6 // chance the timer just picks a new walk target instead of an idle action
+const IDLE_ACTIONS = ['jumping', 'spinning', 'waving', 'squashing', 'colorFlash']
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min)
+}
+
 function randomTarget(bounds, margins) {
   const width = Math.max(bounds.width - margins.left - margins.right, 1)
   const height = Math.max(bounds.height - margins.top - margins.bottom, 1)
@@ -34,6 +45,7 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
     facing: 'right',
     squish: { axis: null, intensity: 0 },
     walkPhase: 0,
+    action: { name: 'walking', progress: 0 },
   }))
 
   useEffect(() => {
@@ -52,6 +64,10 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
         squishAxis: null,
         squishStart: -Infinity,
         walkPhase: 0,
+        actionName: 'walking',
+        actionStart: 0,
+        actionDuration: 0,
+        nextActionTime: performance.now() + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX),
       }
     }
 
@@ -66,11 +82,31 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
       const currentBounds = boundsRef.current
       const currentMargins = marginsRef.current
 
+      // Idle actions briefly pause walking, then hand control back.
+      if (data.actionName !== 'walking') {
+        if (now - data.actionStart >= data.actionDuration) {
+          data.actionName = 'walking'
+          data.nextActionTime = now + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX)
+        }
+      } else if (now >= data.nextActionTime) {
+        if (Math.random() < REDIRECT_CHANCE) {
+          data.target = randomTarget(currentBounds, currentMargins)
+          data.nextActionTime = now + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX)
+        } else {
+          data.actionName = IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]
+          data.actionStart = now
+          data.actionDuration = randomBetween(ACTION_DURATION_MIN, ACTION_DURATION_MAX)
+        }
+      }
+
+      const isIdle = data.actionName !== 'walking'
       const dx = data.target.x - data.position.x
       const dy = data.target.y - data.position.y
       const distance = Math.hypot(dx, dy)
 
-      if (distance < ARRIVAL_THRESHOLD) {
+      if (isIdle) {
+        // Frozen in place while performing an idle action.
+      } else if (distance < ARRIVAL_THRESHOLD) {
         data.target = randomTarget(currentBounds, currentMargins)
       } else {
         const step = Math.min(speed * dt, distance)
@@ -108,12 +144,18 @@ function useBlobBehavior(bounds, { margins, speed = DEFAULT_SPEED } = {}) {
           ? { axis: data.squishAxis, intensity: 1 - squishElapsed / SQUISH_DURATION }
           : { axis: null, intensity: 0 }
 
+      const action = {
+        name: data.actionName,
+        progress: isIdle ? Math.min((now - data.actionStart) / data.actionDuration, 1) : 0,
+      }
+
       setPose({
         x: data.position.x,
         y: data.position.y,
         facing: data.facing,
         squish,
         walkPhase: data.walkPhase,
+        action,
       })
       frameId = requestAnimationFrame(tick)
     }

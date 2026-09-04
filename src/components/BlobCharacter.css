@@ -5,11 +5,11 @@
 }
 
 .blob-body {
-  fill: #ff8c1a;
+  fill: var(--blob-fill, #ff8c1a);
 }
 
 .blob-limb {
-  fill: #ff8c1a;
+  fill: var(--blob-fill, #ff8c1a);
 }
 
 .blob-eye {

@@ -9,9 +9,17 @@ const BLOB_SIZE = 100
 
 function Blob({ bounds }) {
   const margins = useMemo(() => getBlobMargins(BLOB_SIZE), [])
-  const { x, y, facing, squish, walkPhase } = useBlobBehavior(bounds, { margins })
+  const { x, y, facing, squish, walkPhase, action } = useBlobBehavior(bounds, { margins })
   return (
-    <BlobCharacter x={x} y={y} size={BLOB_SIZE} facing={facing} squish={squish} walkPhase={walkPhase} />
+    <BlobCharacter
+      x={x}
+      y={y}
+      size={BLOB_SIZE}
+      facing={facing}
+      squish={squish}
+      walkPhase={walkPhase}
+      action={action}
+    />
   )
 }
 
