@@ -1,10 +1,10 @@
 import { generateBlobPath } from '../utils/blobPath'
 import './BlobCharacter.css'
 
-// Renders a static orange blob, humanoid smiski-style: a rounded head
+// Renders an orange blob, humanoid smiski-style: a rounded head
 // overlapping a taller rounded torso (one seamless silhouette), with
 // stubby limb capsules and a minimal dot-eyed face.
-function BlobCharacter({ x = 0, y = 0, size = 100 }) {
+function BlobCharacter({ x = 0, y = 0, size = 100, facing = 'right' }) {
   const baseRadius = size / 2
   const headRadius = baseRadius * 0.56
   const headOffsetY = -size * 0.46
@@ -28,10 +28,18 @@ function BlobCharacter({ x = 0, y = 0, size = 100 }) {
   const viewBoxSize = size * 2
   const half = viewBoxSize / 2
 
+  const mirror = facing === 'left' ? -1 : 1
+
   return (
     <svg
       className="blob-character"
-      style={{ left: x, top: y, width: viewBoxSize, height: viewBoxSize }}
+      style={{
+        left: x,
+        top: y,
+        width: viewBoxSize,
+        height: viewBoxSize,
+        transform: `translate(-50%, -50%) scaleX(${mirror})`,
+      }}
       viewBox={`${-half} ${-half} ${viewBoxSize} ${viewBoxSize}`}
     >
       <rect className="blob-limb" x={-size * 0.13} y={size * 0.52} width={size * 0.12} height={size * 0.52} rx={size * 0.06} />

@@ -1,7 +1,6 @@
 .blob-character {
   position: absolute;
   overflow: visible;
-  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
