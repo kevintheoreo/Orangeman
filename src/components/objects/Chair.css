@@ -1,0 +1,18 @@
+.chair {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  transform: translate(-50%, -46%);
+}
+
+.chair-seat,
+.chair-back,
+.chair-post,
+.chair-leg {
+  fill: #8a5a34;
+}
+
+.chair-post,
+.chair-back {
+  fill: #7a4c2a;
+}

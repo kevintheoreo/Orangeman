@@ -10,6 +10,8 @@ const JUMP_HEIGHT = 0.4 // fraction of size
 const ACTION_SQUASH_STRENGTH = 0.35
 const WAVE_RAISE_DEG = -110
 const WAVE_WIGGLE_DEG = 20
+const SIT_SINK = 0.08 // fraction of size the body sinks into the chair seat
+const SIT_LEG_BEND_DEG = 78
 const FLASH_COLOR = [255, 255, 255]
 const BASE_COLOR = [255, 140, 26]
 
@@ -40,11 +42,19 @@ function BlobCharacter({
   // Waddle cycle: two bounces per stride (one per footfall), squashing the
   // torso in sync with the bob and swinging opposite arm/leg pairs.
   const bounce = Math.sin(walkPhase * 2)
-  const bobY = -bounce * size * WADDLE_BOB
-  const legSwingLeft = Math.sin(walkPhase) * LEG_SWING_DEG
-  const legSwingRight = -legSwingLeft
-  const armSwingLeft = -legSwingLeft * (ARM_SWING_DEG / LEG_SWING_DEG)
-  const armSwingRight = -armSwingLeft
+  let bobY = -bounce * size * WADDLE_BOB
+  let legSwingLeft = Math.sin(walkPhase) * LEG_SWING_DEG
+  let legSwingRight = -legSwingLeft
+  let armSwingLeft = -legSwingLeft * (ARM_SWING_DEG / LEG_SWING_DEG)
+  let armSwingRight = -armSwingLeft
+
+  if (action.name === 'sitting') {
+    bobY += size * SIT_SINK
+    legSwingLeft = -SIT_LEG_BEND_DEG
+    legSwingRight = SIT_LEG_BEND_DEG
+    armSwingLeft = 0
+    armSwingRight = 0
+  }
 
   const torsoPath = generateBlobPath({
     radius: baseRadius,

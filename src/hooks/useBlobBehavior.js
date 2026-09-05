@@ -18,6 +18,10 @@ const ACTION_DURATIONS = {
 }
 const IDLE_ACTIONS = Object.keys(ACTION_DURATIONS)
 
+const SIT_CHANCE = 0.35 // chance (once an idle beat is chosen) to go sit on the chair instead
+const SIT_DURATION_MIN = 1800 // ms
+const SIT_DURATION_MAX = 3600 // ms
+
 function randomBetween(min, max) {
   return min + Math.random() * (max - min)
 }
@@ -54,9 +58,10 @@ function clampAxis(value, min, max) {
 // position toward a random target, picking a new target on arrival, and
 // clamps/reflects at the tank walls (with a brief squish) so it can never
 // render outside the visible bounds, even mid-resize.
-function useBlobBehavior(bounds, { margins } = {}) {
+function useBlobBehavior(bounds, { margins, chair } = {}) {
   const boundsRef = useRef(bounds)
   const marginsRef = useRef(margins)
+  const chairRef = useRef(chair)
   const dataRef = useRef(null)
   const [pose, setPose] = useState(() => ({
     x: bounds.width / 2,
@@ -71,6 +76,10 @@ function useBlobBehavior(bounds, { margins } = {}) {
     boundsRef.current = bounds
     marginsRef.current = margins
   }, [bounds, margins])
+
+  useEffect(() => {
+    chairRef.current = chair
+  }, [chair])
 
   useEffect(() => {
     if (bounds.width <= 0 || bounds.height <= 0) return undefined
@@ -102,16 +111,21 @@ function useBlobBehavior(bounds, { margins } = {}) {
       const currentBounds = boundsRef.current
       const currentMargins = marginsRef.current
 
-      // Idle actions briefly pause walking, then hand control back.
-      if (data.actionName !== 'walking') {
+      // Idle actions (and sitting) briefly pause walking, then hand control back.
+      // seekingChair keeps moving like a normal walk, so it's excluded here.
+      if (data.actionName !== 'walking' && data.actionName !== 'seekingChair') {
         if (now - data.actionStart >= data.actionDuration) {
           data.actionName = 'walking'
           data.nextActionTime = now + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX)
         }
-      } else if (now >= data.nextActionTime) {
+      } else if (data.actionName === 'walking' && now >= data.nextActionTime) {
+        const chairPos = chairRef.current
         if (Math.random() < REDIRECT_CHANCE) {
           pickNewTarget(data, currentBounds, currentMargins)
           data.nextActionTime = now + randomBetween(ACTION_INTERVAL_MIN, ACTION_INTERVAL_MAX)
+        } else if (chairPos && Math.random() < SIT_CHANCE) {
+          data.actionName = 'seekingChair'
+          data.target = { x: chairPos.x, y: chairPos.y }
         } else {
           data.actionName = pickIdleAction(data.actionName)
           data.actionStart = now
@@ -120,15 +134,21 @@ function useBlobBehavior(bounds, { margins } = {}) {
         }
       }
 
-      const isIdle = data.actionName !== 'walking'
+      const isIdle = data.actionName !== 'walking' && data.actionName !== 'seekingChair'
       const dx = data.target.x - data.position.x
       const dy = data.target.y - data.position.y
       const distance = Math.hypot(dx, dy)
 
       if (isIdle) {
-        // Frozen in place while performing an idle action.
+        // Frozen in place while performing an idle action (including sitting).
       } else if (distance < ARRIVAL_THRESHOLD) {
-        pickNewTarget(data, currentBounds, currentMargins)
+        if (data.actionName === 'seekingChair') {
+          data.actionName = 'sitting'
+          data.actionStart = now
+          data.actionDuration = randomBetween(SIT_DURATION_MIN, SIT_DURATION_MAX)
+        } else {
+          pickNewTarget(data, currentBounds, currentMargins)
+        }
       } else {
         const step = Math.min(data.speed * dt, distance)
         data.position = {
@@ -166,7 +186,7 @@ function useBlobBehavior(bounds, { margins } = {}) {
           : { axis: null, intensity: 0 }
 
       const action = {
-        name: data.actionName,
+        name: data.actionName === 'seekingChair' ? 'walking' : data.actionName,
         progress: isIdle ? Math.min((now - data.actionStart) / data.actionDuration, 1) : 0,
       }
 
