@@ -12,6 +12,10 @@ const WAVE_RAISE_DEG = -110
 const WAVE_WIGGLE_DEG = 20
 const SIT_SINK = 0.08 // fraction of size the body sinks into the chair seat
 const SIT_LEG_BEND_DEG = 78
+const BOUNCE_STANCE_LEG_DEG = 10 // slight steady crouch while dribbling the ball
+const BOUNCE_ARM_REST_DEG = -55 // arm reaches down-forward toward the ball
+const BOUNCE_ARM_SWING_DEG = 35
+const BOUNCE_CROUCH = 0.03 // fraction of size the body dips on each downward dribble
 const FLASH_COLOR = [255, 255, 255]
 const BASE_COLOR = [255, 140, 26]
 
@@ -54,6 +58,12 @@ function BlobCharacter({
     legSwingRight = SIT_LEG_BEND_DEG
     armSwingLeft = 0
     armSwingRight = 0
+  } else if (action.name === 'bouncingBall') {
+    const touchdown = 1 - Math.abs(Math.sin(action.bouncePhase ?? 0))
+    bobY += touchdown * size * BOUNCE_CROUCH
+    legSwingLeft = BOUNCE_STANCE_LEG_DEG
+    legSwingRight = -BOUNCE_STANCE_LEG_DEG
+    armSwingLeft = 0
   }
 
   const torsoPath = generateBlobPath({
@@ -101,10 +111,13 @@ function BlobCharacter({
     flashColor = mixColor(Math.sin(action.progress * Math.PI))
   } else if (action.name === 'waving') {
     waveArmAngle = WAVE_RAISE_DEG + Math.sin(action.progress * Math.PI * 6) * WAVE_WIGGLE_DEG
+  } else if (action.name === 'bouncingBall') {
+    waveArmAngle =
+      BOUNCE_ARM_REST_DEG + Math.sin(action.bouncePhase ?? 0) * BOUNCE_ARM_SWING_DEG
   }
 
   const isSurprised = action.name === 'jumping' || action.name === 'squashing'
-  const isHappy = action.name === 'waving'
+  const isHappy = action.name === 'waving' || action.name === 'bouncingBall'
   const eyeRadius = size * 0.05 * (isSurprised ? 1.3 : 1)
   const mouthY = headOffsetY + size * 0.14
 
