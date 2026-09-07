@@ -17,6 +17,10 @@ const BALL_SIZE = 40
 // so the seek target needs to be raised by that much to land its hips on the
 // seat instead of its feet on the floor.
 const SIT_SEAT_OFFSET = BLOB_SIZE * 0.5
+// The blob's feet sit this far below its anchor point (see the leg geometry
+// in BlobCharacter.jsx), so the seek target needs to be raised by that much
+// for the blob's feet - not its hip anchor - to land on the ball.
+const BALL_FLOOR_OFFSET = BLOB_SIZE * 1.04
 
 function Scene({ bounds }) {
   const blobMargins = useMemo(() => getBlobMargins(BLOB_SIZE), [])
@@ -28,10 +32,14 @@ function Scene({ bounds }) {
     () => (chair ? { x: chair.x, y: chair.y - SIT_SEAT_OFFSET } : null),
     [chair]
   )
+  const ballSeekTarget = useMemo(
+    () => (ball ? { x: ball.x, y: ball.y - BALL_FLOOR_OFFSET } : null),
+    [ball]
+  )
   const { x, y, facing, squish, walkPhase, action } = useBlobBehavior(bounds, {
     margins: blobMargins,
     chair: chairSeatTarget,
-    ball,
+    ball: ballSeekTarget,
   })
 
   return (
