@@ -7,7 +7,7 @@ const SEAM_COLOR_OFFSET = 0.62
 // ball hops higher so the bounce reads with a sense of depth.
 function TennisBall({ x = 0, y = 0, size = 46, bounce = null }) {
   const radius = size / 2
-  const bounceHeight = size * 0.9
+  const bounceHeight = size * 1.8
 
   const active = Boolean(bounce?.active)
   const phase = bounce?.phase ?? 0
