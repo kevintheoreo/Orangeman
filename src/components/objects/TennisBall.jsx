@@ -26,7 +26,13 @@ function TennisBall({ x = 0, y = 0, size = 46, bounce = null }) {
   return (
     <svg
       className="tennis-ball"
-      style={{ left: x, top: y, width: viewBoxSize, height: viewBoxSize }}
+      style={{
+        left: x,
+        top: y,
+        width: viewBoxSize,
+        height: viewBoxSize,
+        zIndex: active ? 1 : 'auto',
+      }}
       viewBox={`${-half} ${-half} ${viewBoxSize} ${viewBoxSize}`}
     >
       <ellipse
