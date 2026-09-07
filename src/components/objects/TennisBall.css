@@ -1,0 +1,20 @@
+.tennis-ball {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.tennis-ball-body {
+  fill: #d3e849;
+}
+
+.tennis-ball-seam {
+  fill: none;
+  stroke: #f5f9d8;
+  stroke-width: 3;
+}
+
+.tennis-ball-shadow {
+  fill: rgba(0, 0, 0, 0.18);
+}
